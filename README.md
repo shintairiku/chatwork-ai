@@ -27,20 +27,18 @@ group_id,customer_name,assignee_name,assignee_email,last_message_at
 - `NOTIFY_DRY_RUN`（`true` で送信せずログのみ）
 
 ## 使い方
-### 1) グループ一覧の取得
+### 1) メッセージ取得〜スプレッドシート更新
 ```
-python main.py --list-rooms
-```
-
-### 2) グループIDをシートに追加
-```
-python main.py --sync-rooms
+python fetch_update.py
 ```
 
-### 3) 日次実行（最終連絡の更新 + 期限超過通知）
+### 2) 通知送信
 ```
-python main.py --threshold-days 7
+python notify.py --threshold-days 7
 ```
+
+### テスト用グループID
+`.env` に `TEST_GROUP_ID` または `ID` を記載すると、メッセージ取得はそのグループのみを対象にします。
 
 ## 参考: Cloud Scheduler で定期実行
 Cloud Run / Cloud Functions などにデプロイし、毎日9時に HTTP 実行する構成を想定しています。
