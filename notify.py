@@ -22,7 +22,7 @@ def notify_overdue(sheets: SheetsClient, threshold_days: int) -> None:
         "customer_name",
         "assignee_name",
         "assignee_email",
-        "last_message_at",
+        "最終メッセージ日時",
     ]
     missing = [name for name in required if name not in header_map]
     if missing:
@@ -37,8 +37,8 @@ def notify_overdue(sheets: SheetsClient, threshold_days: int) -> None:
         if not group_id:
             continue
         last_message_at = (
-            row[header_map["last_message_at"]]
-            if len(row) > header_map["last_message_at"]
+            row[header_map["最終メッセージ日時"]]
+            if len(row) > header_map["最終メッセージ日時"]
             else ""
         )
         last_dt = parse_iso_datetime(last_message_at)
