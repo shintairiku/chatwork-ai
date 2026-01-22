@@ -11,11 +11,11 @@ from google.oauth2.service_account import Credentials
 
 API_BASE = "https://api.chatwork.com/v2"
 SHEET_HEADERS = [
-    "group_id",
-    "customer_name",
-    "assignee_name",
-    "assignee_email",
-    "last_message_at",
+    "担当者名",
+    "担当者連絡先",
+    "グループID",
+    "顧客名",
+    "最終メッセージ日時",
 ]
 
 
@@ -207,16 +207,16 @@ def update_sheet_and_notify(
     threshold = now - dt.timedelta(days=threshold_days)
 
     for idx, row in enumerate(rows, start=2):
-        group_id = row[header_map["group_id"]] if len(row) > header_map["group_id"] else ""
+        group_id = row[header_map["グループID"]] if len(row) > header_map["グループID"] else ""
         if not group_id:
             continue
         last_message_ts = chatwork.get_last_message_time(group_id)
         if not last_message_ts:
             continue
         last_message_at = format_iso_utc(last_message_ts)
-        current = row[header_map["last_message_at"]] if len(row) > header_map["last_message_at"] else ""
+        current = row[header_map["最終メッセージ日時"]] if len(row) > header_map["最終メッセージ日時"] else ""
         if current != last_message_at:
-            updates.append((idx, header_map["last_message_at"] + 1, last_message_at))
+            updates.append((idx, header_map["最終メッセージ日時"] + 1, last_message_at))
 
         last_dt = dt.datetime.fromtimestamp(last_message_ts, tz=dt.timezone.utc)
         if last_dt <= threshold:
@@ -259,12 +259,12 @@ def sync_rooms(chatwork: ChatworkClient, sheets: SheetsClient) -> None:
     values = sheets.read_values("A1:Z")
     header, rows = ensure_sheet_header(sheets, values)
     header_map = build_header_map(header)
-    if "group_id" not in header_map:
+    if "グループID" not in header_map:
         raise RuntimeError("シートに group_id ヘッダーが必要です。")
     existing_ids = set()
     for row in rows:
-        if len(row) > header_map["group_id"]:
-            existing_ids.add(row[header_map["group_id"]])
+        if len(row) > header_map["グループID"]:
+            existing_ids.add(row[header_map["グループID"]])
     new_rows = []
     for room in chatwork.list_rooms():
         room_id = str(room.get("room_id"))

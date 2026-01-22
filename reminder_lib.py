@@ -52,7 +52,7 @@ class ChatworkClient:
         messages = self.list_messages(room_id)
         if not messages:
             return None
-        return max(message.get("send_time", 0) for message in messages)
+        return (messages[-1]["send_time"])
 
 
 class SheetsClient:

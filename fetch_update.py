@@ -1,7 +1,7 @@
 import argparse
 import os
 from typing import List, Tuple
-from dotenv import load_dotenv
+import datetime as dt
 
 from reminder_lib import (
     ChatworkClient,
@@ -19,7 +19,7 @@ def resolve_target_group_id() -> str:
 
 
 def update_sheet_last_message(
-    chatwork: ChatworkClient, sheets: SheetsClient, target_group_id: str
+    chatwork: ChatworkClient, sheets: SheetsClient
 ) -> None:
     values = sheets.read_values("A1:Z")
     header, rows = ensure_sheet_header(sheets, values)
@@ -29,29 +29,22 @@ def update_sheet_last_message(
         raise RuntimeError(f"必要なヘッダーが不足しています: {', '.join(missing)}")
 
     updates: List[Tuple[int, int, str]] = []
-    target_found = False
     for idx, row in enumerate(rows, start=2):
         group_id = row[header_map["グループID"]] if len(row) > header_map["グループID"] else ""
         if not group_id:
             continue
-        if target_group_id and group_id != target_group_id:
-            continue
-        if target_group_id and group_id == target_group_id:
-            target_found = True
         last_message_ts = chatwork.get_last_message_time(group_id)
         if not last_message_ts:
             continue
-        last_message_at = format_iso_utc(last_message_ts)
+        last_message_at = dt.datetime.fromtimestamp(last_message_ts).strftime("%Y/%m/%d %H:%M")
+        print(last_message_at)
         current = (
-            row[header_map["last_message_at"]]
-            if len(row) > header_map["last_message_at"]
+            row[header_map["最終メッセージ日時"]]
+            if len(row) > header_map["最終メッセージ日時"]
             else ""
         )
         if current != last_message_at:
-            updates.append((idx, header_map["last_message_at"] + 1, last_message_at))
-
-    if target_group_id and not target_found:
-        print("テスト用グループIDがシートに見つかりませんでした。")
+            updates.append((idx, header_map["最終メッセージ日時"] + 1, last_message_at))
 
     sheets.update_values(updates)
     print(f"{len(updates)}件の最終連絡日時を更新しました。")
@@ -66,7 +59,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     load_env_file()
-    load_dotenv(verbose=True)
     build_arg_parser().parse_args()
 
     token = load_required_env("CHATWORK_TOKEN")
@@ -80,7 +72,7 @@ def main() -> None:
 
     chatwork = ChatworkClient(token)
     sheets = SheetsClient(spreadsheet_id, sheet_name, credentials_path)
-    update_sheet_last_message(chatwork, sheets, target_group_id)
+    update_sheet_last_message(chatwork, sheets)
 
 
 if __name__ == "__main__":
