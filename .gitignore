@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+
+.env
+marketing-automation-461305-3ab296f19c80.json
+test.py
