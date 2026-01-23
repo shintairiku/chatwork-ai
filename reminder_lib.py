@@ -5,6 +5,7 @@ from email.message import EmailMessage
 from typing import List, Optional, Sequence, Tuple
 
 import requests
+import google.auth
 from google.auth.transport.requests import AuthorizedSession
 from google.oauth2.service_account import Credentials
 
@@ -58,7 +59,11 @@ class ChatworkClient:
 class SheetsClient:
     def __init__(self, spreadsheet_id: str, sheet_name: str, credentials_path: str) -> None:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-        credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+        env = os.getenv("ENV", "local")
+        if env == "local":
+            credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+        else:
+            credentials, _ = google.auth.default(scopes=scopes)
         self._session = AuthorizedSession(credentials)
         self._spreadsheet_id = spreadsheet_id
         self._sheet_name = sheet_name
