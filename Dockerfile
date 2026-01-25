@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir "dotenv>=0.9.9" "google-auth>=2.36.0" "requests>=
 
 COPY . .
 
-CMD ["python", "fetch_update.py"]
+CMD ["python", "server.py"]
