@@ -64,7 +64,14 @@ def main() -> None:
     token = load_required_env("CHATWORK_TOKEN")
     spreadsheet_id = load_required_env("SPREADSHEET_ID")
     sheet_name = os.getenv("SHEET_NAME", "Reminders")
-    credentials_path = load_required_env("GOOGLE_APPLICATION_CREDENTIALS")
+    env = os.getenv("ENV", "local")
+    is_cloud_run = bool(os.getenv("K_SERVICE") or os.getenv("CLOUD_RUN_JOB"))
+    if is_cloud_run:
+        credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    elif env == "local":
+        credentials_path = load_required_env("GOOGLE_APPLICATION_CREDENTIALS")
+    else:
+        credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 
     # target_group_id = resolve_target_group_id()
     # if target_group_id:
