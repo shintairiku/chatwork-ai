@@ -62,6 +62,8 @@ class SheetsClient:
         env = os.getenv("ENV", "local")
         is_cloud_run = bool(os.getenv("K_SERVICE") or os.getenv("CLOUD_RUN_JOB"))
         if is_cloud_run:
+            if credentials_path and not os.path.exists(credentials_path):
+                os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
             credentials, _ = google.auth.default(scopes=scopes)
         elif env == "local":
             if not credentials_path:
@@ -72,6 +74,11 @@ class SheetsClient:
                 credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
             else:
                 credentials, _ = google.auth.default(scopes=scopes)
+        sa_email = getattr(credentials, "service_account_email", None)
+        print(
+            "[auth] credentials=%s service_account_email=%s"
+            % (type(credentials).__name__, sa_email or "unknown")
+        )
         self._session = AuthorizedSession(credentials)
         self._spreadsheet_id = spreadsheet_id
         self._sheet_name = sheet_name
