@@ -60,10 +60,18 @@ class SheetsClient:
     def __init__(self, spreadsheet_id: str, sheet_name: str, credentials_path: str) -> None:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
         env = os.getenv("ENV", "local")
-        if env == "local":
+        is_cloud_run = bool(os.getenv("K_SERVICE") or os.getenv("CLOUD_RUN_JOB"))
+        if is_cloud_run:
+            credentials, _ = google.auth.default(scopes=scopes)
+        elif env == "local":
+            if not credentials_path:
+                raise RuntimeError("ローカル環境ではGOOGLE_APPLICATION_CREDENTIALSが必要です。")
             credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
         else:
-            credentials, _ = google.auth.default(scopes=scopes)
+            if credentials_path:
+                credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
+            else:
+                credentials, _ = google.auth.default(scopes=scopes)
         self._session = AuthorizedSession(credentials)
         self._spreadsheet_id = spreadsheet_id
         self._sheet_name = sheet_name
