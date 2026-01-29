@@ -6,10 +6,14 @@ from urllib.parse import urlparse
 
 from fetch_update import main as fetch_update_main
 
+from notify import main as notify_main
+
 
 def run_fetch_update() -> None:
     fetch_update_main()
 
+def run_notify() -> None:
+    notify_main()
 
 class Handler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, payload: dict) -> None:
@@ -29,11 +33,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
-        if path != "/run":
+        if path not in ("/run"):
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
             return
         try:
             run_fetch_update()
+            run_notify()
         except Exception as exc:  # pragma: no cover - runtime error path
             self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"status": "error", "message": str(exc)})
             return
