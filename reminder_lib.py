@@ -13,7 +13,7 @@ API_BASE = "https://api.chatwork.com/v2"
 SHEET_HEADERS = [
     "担当者名",
     "担当者連絡先",
-    "グループID",
+    "顧客グループID",
     "顧客名",
     "最終メッセージ日時",
 ]
@@ -55,6 +55,14 @@ class ChatworkClient:
             return None
         return (messages[-1]["send_time"])
 
+    def send_messages(self, room_id: str, text: str) -> bool:
+        self._session.headers.update({"Content-Type": "application/x-www-form-urlencoded"})
+        response = self._session.post(
+            f"{API_BASE}/rooms/{room_id}/messages",
+            data={"body": text}
+        )
+        response.raise_for_status()
+        return True
 
 class SheetsClient:
     def __init__(self, spreadsheet_id: str, sheet_name: str, credentials_path: str) -> None:
@@ -143,13 +151,27 @@ def format_iso_utc(ts: int) -> str:
 
 
 def parse_iso_datetime(value: str) -> Optional[dt.datetime]:
-    if not value:
+    if value is None:
         return None
-    normalized = value.replace("Z", "+00:00")
+    normalized = str(value).strip().replace("Z", "+00:00")
+    if not normalized:
+        return None
     try:
         return dt.datetime.fromisoformat(normalized)
     except ValueError:
-        return None
+        pass
+    for fmt in (
+        "%Y/%m/%d %H:%M",
+        "%Y/%m/%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%d %H:%M:%S",
+    ):
+        try:
+            return dt.datetime.strptime(normalized, fmt)
+        except ValueError:
+            continue
+    return None
+
 
 
 def ensure_sheet_header(
@@ -171,69 +193,3 @@ def load_required_env(name: str) -> str:
     if not value:
         raise RuntimeError(f"環境変数 {name} が設定されていません。")
     return value
-
-
-def send_email(
-    smtp_host: str,
-    smtp_port: int,
-    smtp_user: Optional[str],
-    smtp_password: Optional[str],
-    sender: str,
-    recipient: str,
-    subject: str,
-    body: str,
-    use_tls: bool,
-) -> None:
-    msg = EmailMessage()
-    msg["From"] = sender
-    msg["To"] = recipient
-    msg["Subject"] = subject
-    msg.set_content(body)
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
-        if use_tls:
-            server.starttls()
-        if smtp_user and smtp_password:
-            server.login(smtp_user, smtp_password)
-        server.send_message(msg)
-
-
-def notify_if_needed(
-    assignee_email: str,
-    assignee_name: str,
-    customer_name: str,
-    room_id: str,
-    last_contact: dt.datetime,
-) -> bool:
-    smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_password = os.getenv("SMTP_PASSWORD")
-    sender = os.getenv("SMTP_FROM")
-    use_tls = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
-    dry_run = os.getenv("NOTIFY_DRY_RUN", "false").lower() == "true"
-    if not smtp_host or not sender:
-        print("SMTP設定が不足しているため通知をスキップします。")
-        return False
-    subject = f"[Chatwork] {customer_name} 連絡リマインド"
-    body = (
-        f"{assignee_name} 様\n\n"
-        f"顧客: {customer_name}\n"
-        f"グループID: {room_id}\n"
-        f"最終連絡日時: {last_contact.isoformat()}\n\n"
-        "1週間以上連絡がないため、対応をご確認ください。\n"
-    )
-    if dry_run:
-        print(f"DRY RUN通知: {assignee_email} 宛に送信予定")
-        return True
-    send_email(
-        smtp_host,
-        smtp_port,
-        smtp_user,
-        smtp_password,
-        sender,
-        assignee_email,
-        subject,
-        body,
-        use_tls,
-    )
-    return True
