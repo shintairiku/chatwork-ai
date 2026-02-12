@@ -66,6 +66,7 @@ def notify_overdue(chatwork: ChatworkClient, sheets: SheetsClient, threshold_day
             else ""
         )
         body = (
+        f"※通知テスト用メッセージ: 期限超過判定を1日に設定しています。\n\n"
         f"【連絡リマインド】\n\n"
         f"担当者: {assignee_name}様\n"
         f"顧客: {customer_name}様\n"

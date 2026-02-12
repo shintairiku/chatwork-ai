@@ -38,7 +38,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             run_fetch_update()
-            run_notify()
+            run_notify(threshold_days=1)    # test default=7
         except Exception as exc:  # pragma: no cover - runtime error path
             self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"status": "error", "message": str(exc)})
             return
