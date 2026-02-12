@@ -76,7 +76,7 @@ def notify_overdue(chatwork: ChatworkClient, sheets: SheetsClient, threshold_day
         if chatwork.send_messages(assignee_id, body):
             notified += 1
             print(f"通知送信\n顧客名:{customer_name}様\n担当者:{assignee_name}")
-    print(f"{notified}件の通知を実行しました。")
+    print(f"{notified}件の通知を実行しました。[test/sendnotification]")
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
