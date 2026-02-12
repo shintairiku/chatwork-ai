@@ -87,9 +87,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
+def run(threshold_days: int) -> None:
     load_env_file()
-    args = build_arg_parser().parse_args()
 
     token = load_required_env("CHATWORK_TOKEN")
     spreadsheet_id = load_required_env("SPREADSHEET_ID")
@@ -105,7 +104,12 @@ def main() -> None:
 
     sheets = SheetsClient(spreadsheet_id, sheet_name, credentials_path)
     chatwork = ChatworkClient(token)
-    notify_overdue(chatwork, sheets, args.threshold_days)
+    notify_overdue(chatwork, sheets, threshold_days)
+
+def main() -> None:
+    # load_env_file()
+    args = build_arg_parser().parse_args()
+    run(args.threshold_days)
 
 
 if __name__ == "__main__":

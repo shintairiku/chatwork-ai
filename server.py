@@ -6,14 +6,14 @@ from urllib.parse import urlparse
 
 from fetch_update import main as fetch_update_main
 
-from notify import main as notify_main
+from notify import run as notify_run
 
 
 def run_fetch_update() -> None:
     fetch_update_main()
 
-def run_notify() -> None:
-    notify_main()
+def run_notify(threshold_days: int = 7) -> None:
+    notify_run(threshold_days)
 
 class Handler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, payload: dict) -> None:
@@ -38,7 +38,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             run_fetch_update()
-            run_notify(threshold_days=1)    # test default=7
+            run_notify(threshold_days=1)
         except Exception as exc:  # pragma: no cover - runtime error path
             self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"status": "error", "message": str(exc)})
             return
