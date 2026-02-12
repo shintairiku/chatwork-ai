@@ -37,6 +37,23 @@ python fetch_update.py
 python notify.py --threshold-days 7
 ```
 
+### 3) 契約解除の予兆予測
+```
+python churn_predict.py --room-id 123456 --limit 200
+```
+
+#### 予測モデル切り替え
+環境変数 `LLM_HANDLER` で切り替えます。
+- `openai`（既定、`OPENAI_API_KEY` がある場合）
+- `rule`（ルールベースの簡易判定）
+
+OpenAI 互換APIを使う場合の環境変数:
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`（省略時 `gpt-4o-mini`）
+- `OPENAI_BASE_URL`（省略時 `https://api.openai.com`）
+- `LLM_TEMPERATURE`（省略時 `0.2`）
+- `LLM_TIMEOUT`（秒、省略時 `30`）
+
 ### テスト用グループID
 `.env` に `TEST_GROUP_ID` または `ID` を記載すると、メッセージ取得はそのグループのみを対象にします。
 
