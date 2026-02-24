@@ -66,11 +66,11 @@ def notify_overdue(chatwork: ChatworkClient, sheets: SheetsClient, threshold_day
             else ""
         )
         body = (
-        f"【連絡リマインド】\n\n"
+        f"【解約防止リマインド📢】\n\n"
         f"担当者: {assignee_name}様\n"
         f"顧客: {customer_name}様\n"
         f"最終連絡日時: {last_dt.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-        "1週間以上連絡がないため、対応をご確認ください。\n"
+        "1週間以上連絡がないため、顧客への連絡事項がないかご確認ください！\n"
         )
         if chatwork.send_messages(assignee_id, body):
             notified += 1
