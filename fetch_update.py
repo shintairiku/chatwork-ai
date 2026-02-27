@@ -24,13 +24,13 @@ def update_sheet_last_message(
     values = sheets.read_values("A1:Z")
     header, rows = ensure_sheet_header(sheets, values)
     header_map = build_header_map(header)
-    missing = [name for name in ("グループID", "最終メッセージ日時") if name not in header_map]
+    missing = [name for name in ("顧客グループID", "最終メッセージ日時") if name not in header_map]
     if missing:
         raise RuntimeError(f"必要なヘッダーが不足しています: {', '.join(missing)}")
 
     updates: List[Tuple[int, int, str]] = []
     for idx, row in enumerate(rows, start=2):
-        group_id = row[header_map["グループID"]] if len(row) > header_map["グループID"] else ""
+        group_id = row[header_map["顧客グループID"]] if len(row) > header_map["顧客グループID"] else ""
         if not group_id:
             continue
         last_message_ts = chatwork.get_last_message_time(group_id)
@@ -64,7 +64,14 @@ def main() -> None:
     token = load_required_env("CHATWORK_TOKEN")
     spreadsheet_id = load_required_env("SPREADSHEET_ID")
     sheet_name = os.getenv("SHEET_NAME", "Reminders")
-    credentials_path = load_required_env("GOOGLE_APPLICATION_CREDENTIALS")
+    env = os.getenv("ENV", "local")
+    is_cloud_run = bool(os.getenv("K_SERVICE") or os.getenv("CLOUD_RUN_JOB"))
+    if is_cloud_run:
+        credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    elif env == "local":
+        credentials_path = load_required_env("GOOGLE_APPLICATION_CREDENTIALS")
+    else:
+        credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 
     # target_group_id = resolve_target_group_id()
     # if target_group_id:
