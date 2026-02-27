@@ -16,6 +16,7 @@ SHEET_HEADERS = [
     "顧客グループID",
     "顧客名",
     "最終メッセージ日時",
+    "月間コミュニケーション数"
 ]
 
 
@@ -34,6 +35,10 @@ def load_env_file(path: str = ".env") -> None:
             value = value.strip().strip('"').strip("'")
             os.environ.setdefault(key, value)
 
+def one_month_ago_ts(now: Optional[dt.datetime] = None) -> int:
+    now = now or dt.datetime.now()
+    return int((now - dt.timedelta(days=30)).timestamp())
+
 
 class ChatworkClient:
     def __init__(self, token: str) -> None:
@@ -49,6 +54,18 @@ class ChatworkClient:
         response.raise_for_status()
         return response.json()
 
+    def count_messages_since(self, room_id: str, since_ts: int) -> int:
+        messages = self.list_messages(room_id)
+        return sum(1 for m in messages if int(m.get("send_time", 0)) >= since_ts)
+
+    def get_room_message_stats(self, room_id: str, since_ts: int) -> Tuple[Optional[int], int]:
+        messages = self.list_messages(room_id)
+        if not messages:
+            return None, 0
+        last_message_ts = int(messages[-1].get("send_time", 0))
+        monthly_count = sum(1 for m in messages if int(m.get("send_time", 0)) >= since_ts)
+        return last_message_ts, monthly_count
+
     def get_last_message_time(self, room_id: str) -> Optional[int]:
         messages = self.list_messages(room_id)
         if not messages:
@@ -63,6 +80,7 @@ class ChatworkClient:
         )
         response.raise_for_status()
         return True
+        
 
 class SheetsClient:
     def __init__(self, spreadsheet_id: str, sheet_name: str, credentials_path: str) -> None:
