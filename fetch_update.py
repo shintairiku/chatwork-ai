@@ -6,11 +6,11 @@ import datetime as dt
 from reminder_lib import (
     ChatworkClient,
     SheetsClient,
-    build_header_map,
     ensure_sheet_header,
     load_env_file,
     one_month_ago_ts,
     load_required_env,
+    resolve_header_map,
 )
 
 
@@ -22,33 +22,32 @@ def update_sheet_last_message(
     chatwork: ChatworkClient, sheets: SheetsClient
 ) -> None:
     values = sheets.read_values("A1:Z")
-    header, rows = ensure_sheet_header(sheets, values)
-    header_map = build_header_map(header)
-    missing = [name for name in ("顧客グループID", "最終メッセージ日時", "月間コミュニケーション数") if name not in header_map]
-    if missing:
-        raise RuntimeError(f"必要なヘッダーが不足しています: {', '.join(missing)}")
+    _, header, rows, data_start_row = ensure_sheet_header(sheets, values)
+    header_map = resolve_header_map(
+        header, ("customer_group_id", "last_message_at", "monthly_message_count")
+    )
 
     updates_last_massage_ts: List[Tuple[int, int, str]] = []
     updates_monthly_message_count: List[Tuple[int, int, str]] = []
     since_ts = one_month_ago_ts()
-    for idx, row in enumerate(rows, start=2):
-        group_id = row[header_map["顧客グループID"]] if len(row) > header_map["顧客グループID"] else ""
+    for idx, row in enumerate(rows, start=data_start_row):
+        group_id = row[header_map["customer_group_id"]] if len(row) > header_map["customer_group_id"] else ""
         if not group_id:
             continue
         last_message_ts, count = chatwork.get_room_message_stats(group_id, since_ts)
         if not last_message_ts and count == 0:
             continue
-        updates_monthly_message_count.append((idx, header_map["月間コミュニケーション数"] + 1, str(count)))
+        updates_monthly_message_count.append((idx, header_map["monthly_message_count"] + 1, str(count)))
         if last_message_ts:
             last_message_at = dt.datetime.fromtimestamp(last_message_ts).strftime("%Y/%m/%d %H:%M")
             print(last_message_at)
             current = (
-                row[header_map["最終メッセージ日時"]]
-                if len(row) > header_map["最終メッセージ日時"]
+                row[header_map["last_message_at"]]
+                if len(row) > header_map["last_message_at"]
                 else ""
             )
             if current != last_message_at:
-                updates_last_massage_ts.append((idx, header_map["最終メッセージ日時"] + 1, last_message_at))
+                updates_last_massage_ts.append((idx, header_map["last_message_at"] + 1, last_message_at))
 
     sheets.update_values(updates_last_massage_ts)
     print(f"{len(updates_last_massage_ts)}件の最終連絡日時を更新しました。")
