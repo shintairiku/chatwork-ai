@@ -18,6 +18,14 @@ SHEET_HEADERS = [
     "最終メッセージ日時",
     "月間コミュニケーション数"
 ]
+HEADER_ALIASES = {
+    "担当者名": ["担当者名"],
+    "担当者連絡先": ["担当者連絡先"],
+    "顧客グループID": ["顧客グループID"],
+    "顧客名": ["顧客名"],
+    "最終メッセージ日時": ["最終メッセージ日時"],
+    "月間コミュニケーション数": ["月間コミュニケーション数", "月間交信数"],
+}
 
 
 def load_env_file(path: str = ".env") -> None:
@@ -204,6 +212,25 @@ def ensure_sheet_header(
 
 def build_header_map(header: Sequence[str]) -> dict:
     return {name: idx for idx, name in enumerate(header)}
+
+
+def resolve_header_map(
+    header: Sequence[str], required: Sequence[str], aliases: Optional[dict] = None
+) -> dict:
+    aliases = aliases or HEADER_ALIASES
+    raw_map = build_header_map(header)
+    resolved = {}
+    missing = []
+    for name in required:
+        candidates = aliases.get(name, [name])
+        matched = next((candidate for candidate in candidates if candidate in raw_map), None)
+        if matched is None:
+            missing.append(name)
+            continue
+        resolved[name] = raw_map[matched]
+    if missing:
+        raise RuntimeError(f"必要なヘッダーが不足しています: {', '.join(missing)}")
+    return resolved
 
 
 def load_required_env(name: str) -> str:

@@ -5,17 +5,16 @@ import os
 from reminder_lib import (
     ChatworkClient,
     SheetsClient,
-    build_header_map,
     ensure_sheet_header,
     load_env_file,
     load_required_env,
     parse_iso_datetime,
+    resolve_header_map,
 )
 
 def notify_overdue(chatwork: ChatworkClient, sheets: SheetsClient, threshold_days: int) -> None:
     values = sheets.read_values("A1:Z")
     header, rows = ensure_sheet_header(sheets, values)
-    header_map = build_header_map(header)
     required = [
         "顧客グループID",
         "顧客名",
@@ -23,9 +22,7 @@ def notify_overdue(chatwork: ChatworkClient, sheets: SheetsClient, threshold_day
         "担当者連絡先",
         "最終メッセージ日時",
     ]
-    missing = [name for name in required if name not in header_map]
-    if missing:
-        raise RuntimeError(f"必要なヘッダーが不足しています: {', '.join(missing)}")
+    header_map = resolve_header_map(header, required)
 
     jst = dt.timezone(dt.timedelta(hours=9))
     # print(f"jst: {jst}")

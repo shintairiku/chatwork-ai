@@ -6,11 +6,11 @@ import datetime as dt
 from reminder_lib import (
     ChatworkClient,
     SheetsClient,
-    build_header_map,
     ensure_sheet_header,
     load_env_file,
     one_month_ago_ts,
     load_required_env,
+    resolve_header_map,
 )
 
 
@@ -23,10 +23,9 @@ def update_sheet_last_message(
 ) -> None:
     values = sheets.read_values("A1:Z")
     header, rows = ensure_sheet_header(sheets, values)
-    header_map = build_header_map(header)
-    missing = [name for name in ("顧客グループID", "最終メッセージ日時", "月間コミュニケーション数") if name not in header_map]
-    if missing:
-        raise RuntimeError(f"必要なヘッダーが不足しています: {', '.join(missing)}")
+    header_map = resolve_header_map(
+        header, ("顧客グループID", "最終メッセージ日時", "月間コミュニケーション数")
+    )
 
     updates_last_massage_ts: List[Tuple[int, int, str]] = []
     updates_monthly_message_count: List[Tuple[int, int, str]] = []
