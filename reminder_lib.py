@@ -10,7 +10,7 @@ from google.auth.transport.requests import AuthorizedSession
 from google.oauth2.service_account import Credentials
 
 API_BASE = "https://api.chatwork.com/v2"
-SHEET_HEADERS = [
+SHEET_DISPLAY_HEADERS = [
     "担当者名",
     "担当者連絡先",
     "顧客グループID",
@@ -18,13 +18,25 @@ SHEET_HEADERS = [
     "最終メッセージ日時",
     "月間コミュニケーション数"
 ]
+SHEET_KEYS = [
+    "assignee_name",
+    "assignee_contact",
+    "customer_group_id",
+    "customer_name",
+    "last_message_at",
+    "monthly_message_count",
+]
 HEADER_ALIASES = {
-    "担当者名": ["担当者名"],
-    "担当者連絡先": ["担当者連絡先"],
-    "顧客グループID": ["顧客グループID"],
-    "顧客名": ["顧客名"],
-    "最終メッセージ日時": ["最終メッセージ日時"],
-    "月間コミュニケーション数": ["月間コミュニケーション数", "月間交信数"],
+    "assignee_name": ["assignee_name", "担当者名"],
+    "assignee_contact": ["assignee_contact", "担当者連絡先"],
+    "customer_group_id": ["customer_group_id", "顧客グループID"],
+    "customer_name": ["customer_name", "顧客名"],
+    "last_message_at": ["last_message_at", "最終メッセージ日時"],
+    "monthly_message_count": [
+        "monthly_message_count",
+        "月間コミュニケーション数",
+        "月間交信数",
+    ],
 }
 
 
@@ -202,16 +214,24 @@ def parse_iso_datetime(value: str) -> Optional[dt.datetime]:
 
 def ensure_sheet_header(
     sheets: SheetsClient, values: List[List[str]]
-) -> Tuple[List[str], List[List[str]]]:
+) -> Tuple[List[str], List[str], List[List[str]], int]:
     if not values:
-        sheets.append_rows([SHEET_HEADERS])
-        return SHEET_HEADERS, []
-    header = values[0]
-    return header, values[1:]
+        sheets.append_rows([SHEET_DISPLAY_HEADERS, SHEET_KEYS])
+        return SHEET_DISPLAY_HEADERS, SHEET_KEYS, [], 3
+
+    display_header = values[0]
+    if len(values) >= 2 and _looks_like_key_row(values[1]):
+        return display_header, values[1], values[2:], 3
+    return display_header, display_header, values[1:], 2
 
 
 def build_header_map(header: Sequence[str]) -> dict:
     return {name: idx for idx, name in enumerate(header)}
+
+
+def _looks_like_key_row(row: Sequence[str]) -> bool:
+    normalized = {str(cell).strip() for cell in row if str(cell).strip()}
+    return len(normalized.intersection(SHEET_KEYS)) >= 3
 
 
 def resolve_header_map(

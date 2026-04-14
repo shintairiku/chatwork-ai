@@ -14,13 +14,13 @@ from reminder_lib import (
 
 def notify_overdue(chatwork: ChatworkClient, sheets: SheetsClient, threshold_days: int) -> None:
     values = sheets.read_values("A1:Z")
-    header, rows = ensure_sheet_header(sheets, values)
+    _, header, rows, _ = ensure_sheet_header(sheets, values)
     required = [
-        "顧客グループID",
-        "顧客名",
-        "担当者名",
-        "担当者連絡先",
-        "最終メッセージ日時",
+        "customer_group_id",
+        "customer_name",
+        "assignee_name",
+        "assignee_contact",
+        "last_message_at",
     ]
     header_map = resolve_header_map(header, required)
 
@@ -33,8 +33,8 @@ def notify_overdue(chatwork: ChatworkClient, sheets: SheetsClient, threshold_day
 
     for row in rows:
         last_message_at = (
-            row[header_map["最終メッセージ日時"]]
-            if len(row) > header_map["最終メッセージ日時"]
+            row[header_map["last_message_at"]]
+            if len(row) > header_map["last_message_at"]
             else ""
         )
         last_dt = parse_iso_datetime(last_message_at)
@@ -46,20 +46,20 @@ def notify_overdue(chatwork: ChatworkClient, sheets: SheetsClient, threshold_day
         if last_dt > threshold:
             continue
         assignee_id = (
-            row[header_map["担当者連絡先"]]
-            if len(row) > header_map["担当者連絡先"]
+            row[header_map["assignee_contact"]]
+            if len(row) > header_map["assignee_contact"]
             else ""
         )
         if not assignee_id:
             continue
         assignee_name = (
-            row[header_map["担当者名"]]
-            if len(row) > header_map["担当者名"]
+            row[header_map["assignee_name"]]
+            if len(row) > header_map["assignee_name"]
             else ""
         )
         customer_name = (
-            row[header_map["顧客名"]]
-            if len(row) > header_map["顧客名"]
+            row[header_map["customer_name"]]
+            if len(row) > header_map["customer_name"]
             else ""
         )
         body = (
