@@ -3,6 +3,8 @@ import os
 from typing import List, Tuple
 import datetime as dt
 
+import requests
+
 from reminder_lib import (
     ChatworkClient,
     SheetsClient,
@@ -34,7 +36,21 @@ def update_sheet_last_message(
         group_id = row[header_map["customer_group_id"]] if len(row) > header_map["customer_group_id"] else ""
         if not group_id:
             continue
-        last_message_ts, count = chatwork.get_room_message_stats(group_id, since_ts)
+        try:
+            last_message_ts, count = chatwork.get_room_message_stats(group_id, since_ts)
+        except requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else "unknown"
+            print(
+                f"Chatwork APIエラーのためスキップ: row={idx}, room_id={group_id}, "
+                f"status={status}, message={exc}"
+            )
+            continue
+        except requests.RequestException as exc:
+            print(
+                f"Chatwork API呼び出し失敗のためスキップ: row={idx}, "
+                f"room_id={group_id}, message={exc}"
+            )
+            continue
         if not last_message_ts and count == 0:
             continue
         updates_monthly_message_count.append((idx, header_map["monthly_message_count"] + 1, str(count)))

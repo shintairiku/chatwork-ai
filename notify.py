@@ -2,6 +2,8 @@ import argparse
 import datetime as dt
 import os
 
+import requests
+
 from reminder_lib import (
     ChatworkClient,
     SheetsClient,
@@ -69,7 +71,23 @@ def notify_overdue(chatwork: ChatworkClient, sheets: SheetsClient, threshold_day
         f"最終連絡日時: {last_dt.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         "1週間以上連絡がないため、顧客への連絡事項がないかご確認ください！\n"
         )
-        if chatwork.send_messages(assignee_id, body):
+        try:
+            sent = chatwork.send_messages(assignee_id, body)
+        except requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else "unknown"
+            print(
+                f"Chatwork通知エラーのためスキップ: room_id={assignee_id}, "
+                f"customer={customer_name}, assignee={assignee_name}, "
+                f"status={status}, message={exc}"
+            )
+            continue
+        except requests.RequestException as exc:
+            print(
+                f"Chatwork通知失敗のためスキップ: room_id={assignee_id}, "
+                f"customer={customer_name}, assignee={assignee_name}, message={exc}"
+            )
+            continue
+        if sent:
             notified += 1
             print(f"通知送信\n顧客名:{customer_name}様\n担当者:{assignee_name}")
     print(f"{notified}件の通知を実行しました。")
